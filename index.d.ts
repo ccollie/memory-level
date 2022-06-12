@@ -4,21 +4,25 @@ import {
   AbstractOpenOptions,
   NodeCallback
 } from 'abstract-level'
+import {
+  Redis,
+  RedisOptions,
+} from 'ioredis';
 
 /**
- * In-memory {@link AbstractLevel} database for Node.js and browsers.
+ * Redis based {@link AbstractLevel} database for Node.js.
  *
  * @template KDefault The default type of keys if not overridden on operations.
  * @template VDefault The default type of values if not overridden on operations.
  */
-export class MemoryLevel<KDefault = string, VDefault = string>
+export class RedisLevel<KDefault = string, VDefault = string>
   extends AbstractLevel<Buffer | Uint8Array | string, KDefault, VDefault> {
   /**
    * Database constructor.
-   *
+   * @param location The data location.
    * @param options Options, of which some will be forwarded to {@link open}.
    */
-  constructor (options?: DatabaseOptions<KDefault, VDefault> | undefined)
+  constructor (location: string, options?: DatabaseOptions<KDefault, VDefault> | undefined)
 
   open (): Promise<void>
   open (options: OpenOptions): Promise<void>
@@ -27,48 +31,51 @@ export class MemoryLevel<KDefault = string, VDefault = string>
 }
 
 /**
- * Options for the {@link MemoryLevel} constructor.
+ * Options for the {@link RedisLevel} constructor.
  */
 export interface DatabaseOptions<K, V> extends AbstractDatabaseOptions<K, V> {
   /**
-   * How to store data internally. This affects which data types can be stored
-   * non-destructively.
-   *
-   * The default is `'buffer'` (that means {@link Buffer}) which is non-destructive. In
-   * browsers it may be preferable to use `'view'` ({@link Uint8Array}) to avoid having
-   * to bundle the [`buffer`](https://github.com/feross/buffer) shim. Or if there's no
-   * need to store binary data, then `'utf8'` ({@link String}).
-   *
-   * Regardless of the `storeEncoding`, {@link MemoryLevel} supports input that is of any
-   * of the aforementioned types, but internally converts it to one type in order to
-   * provide a consistent sort order.
-   *
-   * @defaultValue `'buffer'`
+   Redis connection options. If not provided, it will use db 0 on localhost:6379
    */
-  storeEncoding?: 'buffer' | 'view' | 'utf8' | undefined
+  connection?: string | RedisOptions | Redis
 
   /**
-   * An {@link AbstractLevel} option that has no effect on {@link MemoryLevel}.
+   * number of values to fetch in one redis call for iteration. Defaults to 256.
+   */
+  highWaterMark?: number
+
+  /**
+   * An {@link AbstractLevel} option that has no effect on {@link RedisLevel}.
    */
   createIfMissing?: boolean
 
   /**
-   * An {@link AbstractLevel} option that has no effect on {@link MemoryLevel}.
+   * An {@link AbstractLevel} option that has no effect on {@link RedisLevel}.
    */
   errorIfExists?: boolean
+
+  /**
+   * Set to true to disable sharing of the connection between multiple RedisLevel instances.
+   */
+  ownClient?: boolean
 }
 
 /**
- * Options for the {@link MemoryLevel.open} method.
+ * Options for the {@link RedisLevel.open} method.
  */
 export interface OpenOptions extends AbstractOpenOptions {
   /**
-   * An {@link AbstractLevel} option that has no effect on {@link MemoryLevel}.
+   * clearOnOpen: If true, the database will be destroyed on open.
    */
-  createIfMissing?: boolean
+  clearOnOpen?: boolean
 
   /**
-   * An {@link AbstractLevel} option that has no effect on {@link MemoryLevel}.
+   Redis connection options. If not provided, it will use db 0 on localhost:6379
    */
-  errorIfExists?: boolean
+  connection?: string | RedisOptions | Redis
+
+  /**
+   * Set to true to disable sharing of the connection between multiple RedisLevel instances.
+   */
+  ownClient?: boolean
 }
